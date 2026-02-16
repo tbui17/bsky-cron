@@ -1,9 +1,13 @@
 import { describe, expect, it, beforeAll, afterAll } from "bun:test";
-import { prisma } from "../db/client";
+import { createPrismaClient } from "../db/client-factory";
 import { getNextPostToSend, markPostAsSent } from "../db/posts";
 import { MockDateTimeProvider } from "../scheduler/date-provider";
 
+const TEST_DB_CONNECTION = "postgresql://postgres:postgres@localhost:5433/bsky_cron_test";
+
 describe("Database Operations", () => {
+  const prisma = createPrismaClient(TEST_DB_CONNECTION);
+
   beforeAll(async () => {
     // Clean up before tests
     await prisma.post.deleteMany();
@@ -64,6 +68,8 @@ describe("Database Operations", () => {
 });
 
 describe("Integration: 4AM scenario", () => {
+  const prisma = createPrismaClient(TEST_DB_CONNECTION);
+
   beforeAll(async () => {
     await prisma.post.deleteMany();
   });
