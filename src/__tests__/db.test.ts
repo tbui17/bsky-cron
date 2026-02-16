@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeAll, afterAll } from "bun:test";
 import { prisma } from "../db/client";
 import { getNextPostToSend, markPostAsSent } from "../db/posts";
+import { MockDateTimeProvider } from "../scheduler/date-provider";
 
 describe("Database Operations", () => {
   beforeAll(async () => {
@@ -15,23 +16,21 @@ describe("Database Operations", () => {
   it("should find the most recent post that needs to be sent", async () => {
     const now = new Date();
     const past = new Date(now.getTime() - 1000 * 60 * 60); // 1 hour ago
-    const future = new Date(now.getTime() + 1000 * 60 * 60); // 1 hour from now
+    const morePast = new Date(now.getTime() - 1000 * 60 * 60 * 2); // 2 hours ago
 
-    // Create test posts
+    // Create test posts - all in the past, most recent not sent
     await prisma.post.create({
-      data: { body: "Past post 1", time: new Date(past.getTime() - 1000 * 60 * 60), sentTime: null },
+      data: { body: "Older post", time: morePast, sentTime: null },
     });
     await prisma.post.create({
-      data: { body: "Past post 2", time: past, sentTime: null },
-    });
-    await prisma.post.create({
-      data: { body: "Future post", time: future, sentTime: null },
+      data: { body: "Most recent post", time: past, sentTime: null },
     });
 
-    const nextPost = await getNextPostToSend();
+    const mockDateProvider = new MockDateTimeProvider(now);
+    const nextPost = await getNextPostToSend(mockDateProvider);
 
     expect(nextPost).not.toBeNull();
-    expect(nextPost?.body).toBe("Past post 2"); // Most recent past post
+    expect(nextPost?.body).toBe("Most recent post"); // Most recent past post
   });
 
   it("should not return posts that have already been sent", async () => {
@@ -43,7 +42,8 @@ describe("Database Operations", () => {
       data: { body: "Sent post", time: past, sentTime: now },
     });
 
-    const nextPost = await getNextPostToSend();
+    const mockDateProvider = new MockDateTimeProvider(now);
+    const nextPost = await getNextPostToSend(mockDateProvider);
 
     expect(nextPost?.body).not.toBe("Sent post");
   });
@@ -60,5 +60,111 @@ describe("Database Operations", () => {
 
     const updated = await prisma.post.findUnique({ where: { id: post.id } });
     expect(updated?.sentTime).not.toBeNull();
+  });
+});
+
+describe("Integration: 4AM scenario", () => {
+  beforeAll(async () => {
+    await prisma.post.deleteMany();
+  });
+
+  afterAll(async () => {
+    await prisma.$disconnect();
+  });
+
+  it("should not send anything when most recent post is in the future", async () => {
+    // Setup: Current time is 4:00 AM
+    const currentTime = new Date("2024-01-15T04:00:00Z");
+    const mockDateProvider = new MockDateTimeProvider(currentTime);
+
+    // Create posts:
+    // - 1:00 AM, not sent
+    // - 2:00 AM, not sent  
+    // - 3:00 AM, sent
+    // - 5:00 AM, not sent (future)
+    await prisma.post.create({
+      data: { 
+        body: "1 AM post", 
+        time: new Date("2024-01-15T01:00:00Z"), 
+        sentTime: null 
+      },
+    });
+    await prisma.post.create({
+      data: { 
+        body: "2 AM post", 
+        time: new Date("2024-01-15T02:00:00Z"), 
+        sentTime: null 
+      },
+    });
+    await prisma.post.create({
+      data: { 
+        body: "3 AM post", 
+        time: new Date("2024-01-15T03:00:00Z"), 
+        sentTime: new Date("2024-01-15T03:05:00Z") 
+      },
+    });
+    await prisma.post.create({
+      data: { 
+        body: "5 AM post", 
+        time: new Date("2024-01-15T05:00:00Z"), 
+        sentTime: null 
+      },
+    });
+
+    // Execute: Try to get next post
+    const nextPost = await getNextPostToSend(mockDateProvider);
+
+    // Verify: Should return null because 5 AM post is in the future
+    expect(nextPost).toBeNull();
+  });
+
+  it("should send 4 AM post when it's the most recent past post", async () => {
+    // Clear previous posts
+    await prisma.post.deleteMany();
+
+    // Setup: Current time is 4:00 AM
+    const currentTime = new Date("2024-01-15T04:00:00Z");
+    const mockDateProvider = new MockDateTimeProvider(currentTime);
+
+    // Create posts:
+    // - 1:00 AM, not sent
+    // - 2:00 AM, not sent
+    // - 3:00 AM, sent
+    // - 4:00 AM, not sent (current time)
+    await prisma.post.create({
+      data: { 
+        body: "1 AM post", 
+        time: new Date("2024-01-15T01:00:00Z"), 
+        sentTime: null 
+      },
+    });
+    await prisma.post.create({
+      data: { 
+        body: "2 AM post", 
+        time: new Date("2024-01-15T02:00:00Z"), 
+        sentTime: null 
+      },
+    });
+    await prisma.post.create({
+      data: { 
+        body: "3 AM post", 
+        time: new Date("2024-01-15T03:00:00Z"), 
+        sentTime: new Date("2024-01-15T03:05:00Z") 
+      },
+    });
+    await prisma.post.create({
+      data: { 
+        body: "4 AM post", 
+        time: new Date("2024-01-15T04:00:00Z"), 
+        sentTime: null 
+      },
+    });
+
+    // Execute: Try to get next post
+    const nextPost = await getNextPostToSend(mockDateProvider);
+
+    // Verify: Should return 4 AM post
+    expect(nextPost).not.toBeNull();
+    expect(nextPost?.body).toBe("4 AM post");
   });
 });

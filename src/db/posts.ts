@@ -1,21 +1,29 @@
 import { prisma } from "./client";
+import type { DateTimeProvider } from "../scheduler/date-provider";
 
-export async function getNextPostToSend() {
-  const now = new Date();
+export async function getNextPostToSend(dateProvider: DateTimeProvider) {
+  const now = dateProvider.now();
   
-  const post = await prisma.post.findFirst({
-    where: {
-      time: {
-        lte: now,
-      },
-      sentTime: null,
-    },
+  // First, check if the most recent scheduled post (by time) is in the past
+  const mostRecentPost = await prisma.post.findFirst({
     orderBy: {
       time: "desc",
     },
   });
 
-  return post;
+  // If no posts exist, or the most recent post is in the future, don't send anything
+  if (!mostRecentPost || mostRecentPost.time > now) {
+    return null;
+  }
+
+  // The most recent post is in the past, now check if it has been sent
+  // If it has been sent, nothing to do
+  if (mostRecentPost.sentTime !== null) {
+    return null;
+  }
+
+  // Return the most recent post (which is in the past and not sent)
+  return mostRecentPost;
 }
 
 export async function markPostAsSent(postId: number) {
