@@ -1,7 +1,11 @@
-import { prisma } from "./client";
+import { PrismaClient } from "@prisma/client";
+import { prisma as defaultPrisma } from "./client";
 import type { DateTimeProvider } from "../scheduler/date-provider";
 
-export async function getNextPostToSend(dateProvider: DateTimeProvider) {
+export async function getNextPostToSend(
+  dateProvider: DateTimeProvider,
+  prisma: PrismaClient = defaultPrisma
+) {
   const now = dateProvider.now();
   
   // First, check if the most recent scheduled post (by time) is in the past
@@ -26,18 +30,18 @@ export async function getNextPostToSend(dateProvider: DateTimeProvider) {
   return mostRecentPost;
 }
 
-export async function markPostAsSent(postId: number) {
+export async function markPostAsSent(postId: number, prisma: PrismaClient = defaultPrisma) {
   return prisma.post.update({
     where: { id: postId },
     data: { sentTime: new Date() },
   });
 }
 
-export async function getPostCount() {
+export async function getPostCount(prisma: PrismaClient = defaultPrisma) {
   return prisma.post.count();
 }
 
-export async function getSentPostCount() {
+export async function getSentPostCount(prisma: PrismaClient = defaultPrisma) {
   return prisma.post.count({
     where: {
       sentTime: {

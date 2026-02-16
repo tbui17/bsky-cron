@@ -31,7 +31,7 @@ describe("Database Operations", () => {
     });
 
     const mockDateProvider = new MockDateTimeProvider(now);
-    const nextPost = await getNextPostToSend(mockDateProvider);
+    const nextPost = await getNextPostToSend(mockDateProvider, prisma);
 
     expect(nextPost).not.toBeNull();
     expect(nextPost?.body).toBe("Most recent post"); // Most recent past post
@@ -47,7 +47,7 @@ describe("Database Operations", () => {
     });
 
     const mockDateProvider = new MockDateTimeProvider(now);
-    const nextPost = await getNextPostToSend(mockDateProvider);
+    const nextPost = await getNextPostToSend(mockDateProvider, prisma);
 
     expect(nextPost?.body).not.toBe("Sent post");
   });
@@ -60,7 +60,7 @@ describe("Database Operations", () => {
       data: { body: "Test post", time: past, sentTime: null },
     });
 
-    await markPostAsSent(post.id);
+    await markPostAsSent(post.id, prisma);
 
     const updated = await prisma.post.findUnique({ where: { id: post.id } });
     expect(updated?.sentTime).not.toBeNull();
@@ -118,7 +118,7 @@ describe("Integration: 4AM scenario", () => {
     });
 
     // Execute: Try to get next post
-    const nextPost = await getNextPostToSend(mockDateProvider);
+    const nextPost = await getNextPostToSend(mockDateProvider, prisma);
 
     // Verify: Should return null because 5 AM post is in the future
     expect(nextPost).toBeNull();
@@ -167,7 +167,7 @@ describe("Integration: 4AM scenario", () => {
     });
 
     // Execute: Try to get next post
-    const nextPost = await getNextPostToSend(mockDateProvider);
+    const nextPost = await getNextPostToSend(mockDateProvider, prisma);
 
     // Verify: Should return 4 AM post
     expect(nextPost).not.toBeNull();
