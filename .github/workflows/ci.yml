@@ -30,5 +30,7 @@ jobs:
           bun-version: latest
       - name: Install dependencies
         run: bun install
+      - name: Generate Prisma Client
+        run: bunx prisma generate --config=prisma.config.test.ts
       - name: Run tests
-        run: bun run test
+        run: bun test
