@@ -75,6 +75,15 @@ Bluesky API rate limits:
 
 We're well within safe limits. The script will exit with error code 1 on failure, triggering GitHub Actions notifications.
 
+## Important: GitHub Actions Cron Reliability
+
+**⚠️ Cron Schedule Disclaimer:** GitHub Actions cron schedules are "best-effort" and not guaranteed to run at exact intervals. During periods of high load, GitHub may throttle or delay scheduled workflows significantly - jobs scheduled to run every 5 minutes may be delayed by hours.
+
+This is a known limitation of GitHub's infrastructure. For more predictable timing, consider:
+- Using an external cron service to trigger workflow dispatches via the API
+- Self-hosting the script on a server with a real cron job
+- Accepting that posts may be irregularly spaced
+
 ## Project Structure
 
 ```
