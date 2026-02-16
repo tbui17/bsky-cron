@@ -1,9 +1,9 @@
-import { prisma } from "./client";
+import { db } from "./client";
 
 async function truncate() {
-  await prisma.post.deleteMany();
+  await db.deleteAllPosts();
   console.log("Truncated all posts");
-  await prisma.$disconnect();
+  await db.disconnect();
 }
 
 truncate();

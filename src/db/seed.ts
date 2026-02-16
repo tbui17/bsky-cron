@@ -1,4 +1,4 @@
-import { prisma } from "../db/client";
+import { db } from "../db/client";
 import { logger } from "../logger";
 import * as fs from "fs";
 import * as path from "path";
@@ -25,11 +25,10 @@ async function seed() {
     const [, body, timeStr] = match;
     const time = new Date(timeStr);
 
-    await prisma.post.create({
-      data: {
-        body: body.replace(/""/g, '"'), // Unescape quotes
-        time,
-      },
+    await db.createPost({
+      body: body.replace(/""/g, '"'), // Unescape quotes
+      time,
+      sentTime: null,
     });
   }
 
@@ -42,5 +41,5 @@ seed()
     process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect();
+    await db.disconnect();
   });

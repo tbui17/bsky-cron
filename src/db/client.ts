@@ -1,21 +1,14 @@
-import { PrismaClient } from "@prisma/client";
-import { createPrismaClient } from "./client-factory";
+import { DbClient } from "./db-client";
 import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const connectionString = process.env.DB_CONNECTION;
-
-if (!connectionString) {
-  throw new Error("DB_CONNECTION environment variable is not set");
-}
-
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+const globalForDb = globalThis as unknown as {
+  db: DbClient | undefined;
 };
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient(connectionString);
+export const db = globalForDb.db ?? DbClient.createDefault();
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  globalForDb.db = db;
 }
