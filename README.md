@@ -2,6 +2,8 @@
 
 A TypeScript script using Bun that posts random number greetings to Bluesky on a schedule via GitHub Actions.
 
+Posts are made to: [https://bsky.app/profile/tbui18.bsky.social](https://bsky.app/profile/tbui18.bsky.social)
+
 ## Features
 
 - Posts "Hello X" where X is a random number (1-1000)
