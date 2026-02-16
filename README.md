@@ -1,101 +1,206 @@
 # Bluesky Cron Post
 
-A TypeScript script using Bun that posts random number greetings to Bluesky on a schedule via GitHub Actions.
+A TypeScript script using Bun that posts scheduled messages to Bluesky from a PostgreSQL database via GitHub Actions.
 
 Posts are made to: [https://bsky.app/profile/tbui18.bsky.social](https://bsky.app/profile/tbui18.bsky.social)
 
 ## Features
 
-- Posts "Hello X" where X is a random number (1-1000)
-- Runs every 5 minutes via GitHub Actions cron job
-- Uses environment variables for secure credential management
-- Written in TypeScript with Bun runtime
+- Reads posts from Supabase/PostgreSQL database with scheduled times
+- Posts only the most recent past-due unsent message
+- Updates database with sent timestamp on success
+- Structured logging with Pino
+- Integration tests with Bun's test runner
+- Local development with Supabase CLI and Docker
 
 ## Prerequisites
 
 - [Bun](https://bun.sh/) installed locally
-- Bluesky account
-- App password generated from Bluesky Settings
+- [Docker](https://www.docker.com/) for local Supabase
+- Bluesky account with app password
+- Supabase account (for hosted database)
 
 ## Setup
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-username/bsky-cron.git
-   cd bsky-cron
-   ```
+### 1. Clone and Install
 
-2. **Install dependencies:**
-   ```bash
-   bun install
-   ```
-
-3. **Configure environment variables:**
-   
-   Copy `.env.example` to `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` with your Bluesky credentials:
-   ```
-   BLUESKY_HANDLE=your-handle.bsky.social
-   BLUESKY_PASSWORD=your-app-password
-   ```
-
-4. **Generate App Password:**
-   - Go to Bluesky Settings → App Passwords
-   - Generate a new app password
-   - Copy and paste it into `.env`
-
-## Local Usage
-
-Run the script locally:
 ```bash
-bun run post
+git clone https://github.com/your-username/bsky-cron.git
+cd bsky-cron
+bun install
 ```
 
-## GitHub Actions Setup
+### 2. Environment Variables
 
-1. Go to your repository's Settings → Secrets and variables → Actions
+Copy `.env.example` to `.env` and configure:
 
-2. Add the following repository secrets:
-   - `BLUESKY_HANDLE` - Your Bluesky handle (e.g., `your-handle.bsky.social`)
-   - `BLUESKY_PASSWORD` - Your Bluesky app password
+```bash
+BLUESKY_HANDLE=your-handle.bsky.social
+BLUESKY_PASSWORD=your-app-password
+DB_CONNECTION=postgresql://postgres:password@db.supabase.co:5432/postgres
+```
 
-3. The workflow runs automatically every 5 minutes via cron schedule
+### 3. Database Setup
 
-4. You can also trigger manually from the Actions tab
+#### Local Development (with Supabase CLI)
+
+```bash
+# Start local Supabase
+bun run supabase:start
+
+# Generate Prisma client
+bun run prisma:generate
+
+# Push schema to local database (uses DB_CONNECTION from .env)
+bun run prisma:push
+
+# Seed with data from data.csv
+bun run db:seed
+```
+
+#### Hosted Database (Production)
+
+```bash
+# Push schema to hosted Supabase
+bun run prisma:push
+
+# Seed hosted database
+bun run db:seed
+```
+
+### 4. Generate Bluesky App Password
+
+1. Go to Bluesky Settings → App Passwords
+2. Generate a new app password
+3. Add to `.env` as `BLUESKY_PASSWORD`
+
+## Usage
+
+### Run Locally
+
+```bash
+# Run the scheduler (checks for and sends next post)
+bun run post
+
+# Or using the dev script
+bun run dev
+```
+
+### GitHub Actions
+
+The cron workflow runs every 5 minutes automatically. You can also trigger manually:
+
+```bash
+gh workflow run cron.yml
+```
+
+## Database Schema
+
+```prisma
+model Post {
+  id        Int       @id @default(autoincrement())
+  createdAt DateTime  @default(now()) @map("created_at")
+  body      String    @default("") @db.Text
+  time      DateTime  @unique
+  sentTime  DateTime? @map("sent_time")
+}
+```
+
+- `body`: The message content to post
+- `time`: When the post should be sent
+- `sentTime`: When it was actually sent (null = not sent yet)
+
+## How It Works
+
+The scheduler:
+1. Queries for the most recent post where `time <= NOW()` AND `sentTime IS NULL`
+2. If found, posts to Bluesky
+3. Updates `sentTime` on success
+4. If no posts are ready, exits silently
+
+**Example:** Given current time is 6:00 AM:
+- 2:00 AM post (not sent) → **NOT sent** (not the most recent)
+- 4:00 AM post (sent) → Skipped
+- 8:00 AM post (not sent) → **NOT eligible** (in the future)
+- 5:00 AM post (not sent) → **SENT** (most recent past post)
+
+## Scripts
+
+```bash
+# Database
+bun run prisma:generate    # Generate Prisma client
+bun run prisma:push        # Push schema to database
+bun run db:seed            # Import data from data.csv
+bun run db:truncate        # Clear all posts
+
+# Development
+bun run post               # Run scheduler
+bun run dev                # Run scheduler (alias)
+bun run test               # Run integration tests
+
+# Supabase
+bun run supabase:start     # Start local Supabase
+bun run supabase:stop      # Stop local Supabase
+```
+
+## Testing
+
+Run integration tests against local Supabase:
+
+```bash
+# Ensure local Supabase is running
+bun run supabase:start
+
+# Set local database URL in .env
+DB_CONNECTION=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+# Run tests
+bun run test
+```
+
+**Note:** The Bluesky integration tests will post actual messages to your account.
 
 ## Rate Limits
 
-Bluesky API rate limits:
+Bluesky API limits:
 - **Create Posts:** 1,666/hour, 11,666/day
 - **This cron:** 288 posts/day (every 5 minutes)
 
-We're well within safe limits. The script will exit with error code 1 on failure, triggering GitHub Actions notifications.
+We're well within safe limits. The script exits with code 1 on failure, triggering GHA notifications.
 
-## Important: GitHub Actions Cron Reliability
+## GitHub Actions Cron Disclaimer
 
-**⚠️ Cron Schedule Disclaimer:** GitHub Actions cron schedules are "best-effort" and not guaranteed to run at exact intervals. During periods of high load, GitHub may throttle or delay scheduled workflows significantly - jobs scheduled to run every 5 minutes may be delayed by hours.
-
-This is a known limitation of GitHub's infrastructure. For more predictable timing, consider:
-- Using an external cron service to trigger workflow dispatches via the API
-- Self-hosting the script on a server with a real cron job
-- Accepting that posts may be irregularly spaced
+**⚠️** GitHub Actions cron is "best-effort" - jobs may be delayed by hours. For predictable timing, consider:
+- External cron service triggering workflow dispatches
+- Self-hosting on a server
 
 ## Project Structure
 
 ```
 bsky-cron/
 ├── .github/workflows/
-│   └── cron.yml          # GitHub Actions workflow
+│   └── cron.yml          # GHA workflow
+├── prisma/
+│   ├── schema.prisma     # Database schema
+│   └── migrations/       # Database migrations
 ├── src/
-│   └── post.ts           # Main posting script
-├── .env.example          # Environment variables template
-├── package.json          # Project dependencies
-├── tsconfig.json         # TypeScript configuration
-└── README.md             # This file
+│   ├── index.ts          # Entry point
+│   ├── db/
+│   │   ├── client.ts     # Prisma client
+│   │   ├── posts.ts      # Post repository
+│   │   └── seed.ts       # Seed script
+│   ├── bluesky/
+│   │   └── client.ts     # Bluesky API client
+│   ├── scheduler/
+│   │   └── runner.ts     # Core scheduling logic
+│   ├── logger.ts         # Pino logger setup
+│   └── __tests__/
+│       ├── db.test.ts    # Database tests
+│       └── bluesky.test.ts # Bluesky API tests
+├── data.csv              # Seed data
+├── supabase/             # Supabase config
+├── .env.example          # Env template
+└── package.json          # Scripts & dependencies
 ```
 
 ## License
