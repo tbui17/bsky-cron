@@ -7,6 +7,8 @@ Bluesky cron job that posts random number greetings to Bluesky every 5 minutes v
 - **Runtime**: Bun
 - **Language**: TypeScript
 - **API**: @atproto/api (Bluesky SDK)
+- **Database**: Supabase (stores social media posts)
+- **CLI**: Supabase CLI
 - **CI/CD**: GitHub Actions
 
 ## Environment Variables
