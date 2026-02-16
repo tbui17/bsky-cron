@@ -1,0 +1,16 @@
+{
+  "name": "bsky-cron",
+  "version": "1.0.0",
+  "description": "A cron job that posts random numbers to Bluesky",
+  "type": "module",
+  "scripts": {
+    "post": "bun run src/post.ts"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.13.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
