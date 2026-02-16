@@ -29,3 +29,4 @@ jobs:
         env:
           BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
           BLUESKY_PASSWORD: ${{ secrets.BLUESKY_PASSWORD }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
