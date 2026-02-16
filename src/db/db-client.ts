@@ -10,9 +10,9 @@ export class DbClient {
   }
 
   static createDefault(): DbClient {
-    const connectionString = process.env.DB_CONNECTION;
+    const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
-      throw new Error("DB_CONNECTION environment variable is not set");
+      throw new Error("DATABASE_URL environment variable is not set");
     }
     const prisma = createPrismaClient(connectionString);
     return new DbClient(prisma);

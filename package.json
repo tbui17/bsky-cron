@@ -11,9 +11,9 @@
     "prisma:push": "prisma db push",
     "db:seed": "bun run src/db/seed.ts",
     "db:truncate": "bun run src/db/truncate.ts",
-    "test": "docker-compose -f docker-compose.test.yml up -d && sleep 2 && DB_CONNECTION=postgresql://postgres:postgres@localhost:5433/bsky_cron_test bun test && docker-compose -f docker-compose.test.yml down",
-    "test:run": "DB_CONNECTION=postgresql://postgres:postgres@localhost:5433/bsky_cron_test bun test",
-    "test:setup": "docker-compose -f docker-compose.test.yml up -d && sleep 2 && DB_CONNECTION=postgresql://postgres:postgres@localhost:5433/bsky_cron_test npx prisma db push",
+    "test": "docker-compose -f docker-compose.test.yml up -d && sleep 2 && DATABASE_URL=postgresql://postgres:postgres@localhost:5433/bsky_cron_test bun test && docker-compose -f docker-compose.test.yml down",
+    "test:run": "DATABASE_URL=postgresql://postgres:postgres@localhost:5433/bsky_cron_test bun test",
+    "test:setup": "docker-compose -f docker-compose.test.yml up -d && sleep 2 && DATABASE_URL=postgresql://postgres:postgres@localhost:5433/bsky_cron_test npx prisma db push",
     "test:teardown": "docker-compose -f docker-compose.test.yml down",
     "supabase:start": "npx supabase start",
     "supabase:stop": "npx supabase stop"
