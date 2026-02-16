@@ -9,6 +9,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: "postgresql://postgres:postgres@localhost:5433/bsky_cron_test",
   },
 });
