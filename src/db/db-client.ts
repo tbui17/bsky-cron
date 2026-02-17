@@ -27,7 +27,11 @@ export class DbClient {
     const now = dateProvider.now();
 
     const mostRecentPost = await this.prisma.post.findFirst({
+      where: {
+        time: { lte: now },
+      },
       orderBy: { time: "desc" },
+      take: 1,
     });
 
     if (!mostRecentPost || mostRecentPost.time > now) {
