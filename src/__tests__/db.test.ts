@@ -13,7 +13,8 @@ import { configs } from "../../prisma.config.test";
 const TEST_DB_CONNECTION = configs.datasource.url;
 
 describe("Database Operations", () => {
-  const db = DbClient.create(TEST_DB_CONNECTION);
+  const mockDateProvider = new MockDateTimeProvider(new Date());
+  const db = DbClient.create(TEST_DB_CONNECTION, mockDateProvider);
 
   beforeAll(async () => {
     // Clean up before tests
@@ -30,15 +31,13 @@ describe("Database Operations", () => {
     const morePast = new Date(now.getTime() - 1000 * 60 * 60 * 2); // 2 hours ago
 
     // Create test posts - all in the past, most recent not sent
-    await db.createPost({ body: "Older post", time: morePast, sentTime: null });
-    await db.createPost({
-      body: "Most recent post",
-      time: past,
-      sentTime: null,
-    });
+    await db.createPosts([
+      { body: "Older post", time: morePast, sentTime: null },
+      { body: "Most recent post", time: past, sentTime: null },
+    ]);
 
-    const mockDateProvider = new MockDateTimeProvider(now);
-    const nextPost = await db.getNextPostToSend(mockDateProvider);
+    mockDateProvider.setTime(now);
+    const nextPost = await db.getNextPostToSend();
 
     expect(nextPost).not.toBeNull();
     expect(nextPost?.body).toBe("Most recent post"); // Most recent past post
@@ -51,8 +50,8 @@ describe("Database Operations", () => {
     // Create a sent post
     await db.createPost({ body: "Sent post", time: past, sentTime: now });
 
-    const mockDateProvider = new MockDateTimeProvider(now);
-    const nextPost = await db.getNextPostToSend(mockDateProvider);
+    mockDateProvider.setTime(now);
+    const nextPost = await db.getNextPostToSend();
 
     expect(nextPost?.body).not.toBe("Sent post");
   });
@@ -75,7 +74,8 @@ describe("Database Operations", () => {
 });
 
 describe("Integration: 4AM scenario", () => {
-  const db = DbClient.create(TEST_DB_CONNECTION);
+  const mockDateProvider = new MockDateTimeProvider(new Date());
+  const db = DbClient.create(TEST_DB_CONNECTION, mockDateProvider);
 
   beforeEach(async () => {
     await db.deleteAllPosts();
@@ -88,36 +88,22 @@ describe("Integration: 4AM scenario", () => {
   it("should not send anything when most recent post is in the future", async () => {
     // Setup: Current time is 4:00 AM
     const currentTime = new Date("2024-01-15T04:00:00Z");
-    const mockDateProvider = new MockDateTimeProvider(currentTime);
 
     // Create posts:
     // - 1:00 AM, not sent
     // - 2:00 AM, not sent
     // - 3:00 AM, sent
     // - 5:00 AM, not sent (future)
-    await db.createPost({
-      body: "1 AM post",
-      time: new Date("2024-01-15T01:00:00Z"),
-      sentTime: null,
-    });
-    await db.createPost({
-      body: "2 AM post",
-      time: new Date("2024-01-15T02:00:00Z"),
-      sentTime: null,
-    });
-    await db.createPost({
-      body: "3 AM post",
-      time: new Date("2024-01-15T03:00:00Z"),
-      sentTime: new Date("2024-01-15T03:05:00Z"),
-    });
-    await db.createPost({
-      body: "5 AM post",
-      time: new Date("2024-01-15T05:00:00Z"),
-      sentTime: null,
-    });
+    await db.createPosts([
+      { body: "1 AM post", time: new Date("2024-01-15T01:00:00Z"), sentTime: null },
+      { body: "2 AM post", time: new Date("2024-01-15T02:00:00Z"), sentTime: null },
+      { body: "3 AM post", time: new Date("2024-01-15T03:00:00Z"), sentTime: new Date("2024-01-15T03:05:00Z") },
+      { body: "5 AM post", time: new Date("2024-01-15T05:00:00Z"), sentTime: null },
+    ]);
 
     // Execute: Try to get next post
-    const nextPost = await db.getNextPostToSend(mockDateProvider);
+    mockDateProvider.setTime(currentTime);
+    const nextPost = await db.getNextPostToSend();
 
     // Verify: Should return null because 5 AM post is in the future
     expect(nextPost).toBeNull();
@@ -126,36 +112,22 @@ describe("Integration: 4AM scenario", () => {
   it("should send 3 AM post when it's the most recent past post", async () => {
     // Setup: Current time is 4:00 AM
     const currentTime = new Date("2024-01-15T04:00:00Z");
-    const mockDateProvider = new MockDateTimeProvider(currentTime);
 
     // Create posts:
     // - 1:00 AM, not sent
     // - 2:00 AM, not sent
     // - 3:00 AM, sent
     // - 5:00 AM, not sent (future)
-    await db.createPost({
-      body: "1 AM post",
-      time: new Date("2024-01-15T01:00:00Z"),
-      sentTime: null,
-    });
-    await db.createPost({
-      body: "2 AM post",
-      time: new Date("2024-01-15T02:00:00Z"),
-      sentTime: null,
-    });
-    await db.createPost({
-      body: "3 AM post",
-      time: new Date("2024-01-15T03:00:00Z"),
-      sentTime: null,
-    });
-    await db.createPost({
-      body: "5 AM post",
-      time: new Date("2024-01-15T05:00:00Z"),
-      sentTime: null,
-    });
+    await db.createPosts([
+      { body: "1 AM post", time: new Date("2024-01-15T01:00:00Z"), sentTime: null },
+      { body: "2 AM post", time: new Date("2024-01-15T02:00:00Z"), sentTime: null },
+      { body: "3 AM post", time: new Date("2024-01-15T03:00:00Z"), sentTime: null },
+      { body: "5 AM post", time: new Date("2024-01-15T05:00:00Z"), sentTime: null },
+    ]);
 
     // Execute: Try to get next post
-    const nextPost = await db.getNextPostToSend(mockDateProvider);
+    mockDateProvider.setTime(currentTime);
+    const nextPost = await db.getNextPostToSend();
 
     expect(nextPost).not.toBeNull();
     expect(nextPost!.body).toBe("3 AM post");

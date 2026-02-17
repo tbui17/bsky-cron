@@ -1,14 +1,12 @@
 import { db } from "../db/client";
-import { postToBluesky } from "../bluesky/client";
+import { BlueskyClient } from "../bluesky/client";
 import { logger } from "../logger";
-import type { DateTimeProvider } from "./date-provider";
-import { SystemDateTimeProvider } from "./date-provider";
 
-export async function runScheduler(dateProvider: DateTimeProvider = new SystemDateTimeProvider()) {
+export async function runScheduler() {
   logger.info("Starting scheduler run");
 
   try {
-    const post = await db.getNextPostToSend(dateProvider);
+    const post = await db.getNextPostToSend();
 
     if (!post) {
       logger.info("No posts ready to send");
@@ -17,7 +15,8 @@ export async function runScheduler(dateProvider: DateTimeProvider = new SystemDa
 
     logger.info({ postId: post.id, time: post.time }, "Found post to send");
 
-    const response = await postToBluesky(post.body);
+    const blueskyClient = BlueskyClient.createDefault();
+    const response = await blueskyClient.post(post.body);
     
     await db.markPostAsSent(post.id);
     
