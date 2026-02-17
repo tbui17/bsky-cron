@@ -1,8 +1,16 @@
-import { describe, expect, it, beforeAll, afterAll, beforeEach } from "bun:test";
+import {
+  describe,
+  expect,
+  it,
+  beforeAll,
+  afterAll,
+  beforeEach,
+} from "bun:test";
 import { DbClient } from "../db/db-client";
 import { MockDateTimeProvider } from "../scheduler/date-provider";
+import { configs } from "../../prisma.config.test";
 
-const TEST_DB_CONNECTION = "postgresql://postgres:postgres@localhost:5433/bsky_cron_test";
+const TEST_DB_CONNECTION = configs.datasource.url;
 
 describe("Database Operations", () => {
   const db = DbClient.create(TEST_DB_CONNECTION);
@@ -23,7 +31,11 @@ describe("Database Operations", () => {
 
     // Create test posts - all in the past, most recent not sent
     await db.createPost({ body: "Older post", time: morePast, sentTime: null });
-    await db.createPost({ body: "Most recent post", time: past, sentTime: null });
+    await db.createPost({
+      body: "Most recent post",
+      time: past,
+      sentTime: null,
+    });
 
     const mockDateProvider = new MockDateTimeProvider(now);
     const nextPost = await db.getNextPostToSend(mockDateProvider);
@@ -49,7 +61,11 @@ describe("Database Operations", () => {
     const now = new Date();
     const past = new Date(now.getTime() - 1000 * 60 * 60);
 
-    const post = await db.createPost({ body: "Test post", time: past, sentTime: null });
+    const post = await db.createPost({
+      body: "Test post",
+      time: past,
+      sentTime: null,
+    });
 
     await db.markPostAsSent(post.id);
 
@@ -76,28 +92,28 @@ describe("Integration: 4AM scenario", () => {
 
     // Create posts:
     // - 1:00 AM, not sent
-    // - 2:00 AM, not sent  
+    // - 2:00 AM, not sent
     // - 3:00 AM, sent
     // - 5:00 AM, not sent (future)
-    await db.createPost({ 
-      body: "1 AM post", 
-      time: new Date("2024-01-15T01:00:00Z"), 
-      sentTime: null 
+    await db.createPost({
+      body: "1 AM post",
+      time: new Date("2024-01-15T01:00:00Z"),
+      sentTime: null,
     });
-    await db.createPost({ 
-      body: "2 AM post", 
-      time: new Date("2024-01-15T02:00:00Z"), 
-      sentTime: null 
+    await db.createPost({
+      body: "2 AM post",
+      time: new Date("2024-01-15T02:00:00Z"),
+      sentTime: null,
     });
-    await db.createPost({ 
-      body: "3 AM post", 
-      time: new Date("2024-01-15T03:00:00Z"), 
-      sentTime: new Date("2024-01-15T03:05:00Z") 
+    await db.createPost({
+      body: "3 AM post",
+      time: new Date("2024-01-15T03:00:00Z"),
+      sentTime: new Date("2024-01-15T03:05:00Z"),
     });
-    await db.createPost({ 
-      body: "5 AM post", 
-      time: new Date("2024-01-15T05:00:00Z"), 
-      sentTime: null 
+    await db.createPost({
+      body: "5 AM post",
+      time: new Date("2024-01-15T05:00:00Z"),
+      sentTime: null,
     });
 
     // Execute: Try to get next post
@@ -109,25 +125,25 @@ describe("Integration: 4AM scenario", () => {
 
   it("should send 4 AM post when it's the most recent past post", async () => {
     // Create posts directly
-    await db.createPost({ 
-      body: "1 AM post", 
-      time: new Date("2024-01-15T01:00:00Z"), 
-      sentTime: null 
+    await db.createPost({
+      body: "1 AM post",
+      time: new Date("2024-01-15T01:00:00Z"),
+      sentTime: null,
     });
-    await db.createPost({ 
-      body: "2 AM post", 
-      time: new Date("2024-01-15T02:00:00Z"), 
-      sentTime: null 
+    await db.createPost({
+      body: "2 AM post",
+      time: new Date("2024-01-15T02:00:00Z"),
+      sentTime: null,
     });
-    await db.createPost({ 
-      body: "3 AM post", 
-      time: new Date("2024-01-15T03:00:00Z"), 
-      sentTime: new Date("2024-01-15T03:05:00Z") 
+    await db.createPost({
+      body: "3 AM post",
+      time: new Date("2024-01-15T03:00:00Z"),
+      sentTime: new Date("2024-01-15T03:05:00Z"),
     });
-    await db.createPost({ 
-      body: "4 AM post", 
-      time: new Date("2024-01-15T04:00:00Z"), 
-      sentTime: null 
+    await db.createPost({
+      body: "4 AM post",
+      time: new Date("2024-01-15T04:00:00Z"),
+      sentTime: null,
     });
 
     // Setup: Current time is 4:00 AM

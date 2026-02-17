@@ -2,12 +2,14 @@
 // npm install --save-dev prisma dotenv
 import { defineConfig } from "prisma/config";
 
-export default defineConfig({
+export const configs = {
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: "postgresql://postgres:postgres@localhost:5433/bsky_cron_test",
+    url: "postgresql://postgres:postgres@localhost:5432/bsky_cron_test",
   },
-});
+};
+
+export default defineConfig(configs);
