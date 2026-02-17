@@ -1,6 +1,6 @@
-import { PrismaClient } from "@prisma/client";
 import { createPrismaClient } from "./client-factory";
 import type { DateTimeProvider } from "../scheduler/date-provider";
+import { PrismaClient } from "../../prisma/generated/client";
 
 export class DbClient {
   private prisma: PrismaClient;
@@ -25,7 +25,7 @@ export class DbClient {
 
   async getNextPostToSend(dateProvider: DateTimeProvider) {
     const now = dateProvider.now();
-    
+
     const mostRecentPost = await this.prisma.post.findFirst({
       orderBy: { time: "desc" },
     });
