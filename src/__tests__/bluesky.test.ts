@@ -8,7 +8,7 @@ describe("Bluesky Integration", () => {
     expect(client.IsLoggedIn).toBe(true);
   });
 
-  it.skipIf(!!process.env.CI)("should post to Bluesky", async () => {
+  it.skipIf(!process.env.CI)("should post to Bluesky", async () => {
     const client = BlueskyClient.createDefault();
     const testMessage = `Test post from CI at ${new Date().toISOString()}`;
     const response = await client.post(testMessage);
