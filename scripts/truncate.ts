@@ -1,7 +1,6 @@
 import { DbClient } from "../src/db/db-client";
-import { SystemDateTimeProvider } from "../src/scheduler/date-provider";
 
-const db = DbClient.createDefault(new SystemDateTimeProvider());
+const db = DbClient.createDefault();
 
 async function truncate() {
   await db.deleteAllPosts();
