@@ -36,8 +36,8 @@ jobs:
       - name: Install dependencies
         run: bun install
       - name: Generate Prisma Client
-        run: bunx prisma generate --config=prisma.config.test.ts
+        run: bunx prisma generate
       - name: Run migrations
-        run: bunx prisma db push
+        run: bunx prisma db push --config=prisma.config.test.ts
       - name: Run tests
         run: bun test
