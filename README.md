@@ -6,19 +6,19 @@ Posts are made to: [https://bsky.app/profile/tbui18.bsky.social](https://bsky.ap
 
 ## Features
 
-- Reads posts from Supabase/PostgreSQL database with scheduled times
+- Reads posts from PostgreSQL database with scheduled times
 - Posts only the most recent past-due unsent message
 - Updates database with sent timestamp on success
 - Structured logging with Pino
 - Integration tests with Bun's test runner
-- Local development with Supabase CLI and Docker
+- Local development with Docker
 
 ## Prerequisites
 
 - [Bun](https://bun.sh/) installed locally
-- [Docker](https://www.docker.com/) for local Supabase
+- [Docker](https://www.docker.com/) for local PostgreSQL
 - Bluesky account with app password
-- Supabase account (for hosted database)
+- PostgreSQL database (local or hosted)
 
 ## Setup
 
@@ -42,11 +42,11 @@ DATABASE_URL=postgresql://postgres:password@db.supabase.co:5432/postgres
 
 ### 3. Database Setup
 
-#### Local Development (with Supabase CLI)
+#### Local Development (with Docker)
 
 ```bash
-# Start local Supabase
-bun run supabase:start
+# Start local PostgreSQL
+docker-compose -f docker-compose.test.yml up -d
 
 # Generate Prisma client
 bun run prisma:generate
@@ -61,7 +61,7 @@ bun run db:seed
 #### Hosted Database (Production)
 
 ```bash
-# Push schema to hosted Supabase
+# Push schema to hosted PostgreSQL
 bun run prisma:push
 
 # Seed hosted database
@@ -136,14 +136,11 @@ bun run test               # Run integration tests
 
 ## Testing
 
-Run integration tests against local Supabase:
+Run integration tests against local PostgreSQL:
 
 ```bash
-# Ensure local Supabase is running
-bun run supabase:start
-
 # Set local database URL in .env
-DB_CONNECTION=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
 # Run tests
 bun run test

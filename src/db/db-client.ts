@@ -1,12 +1,14 @@
 import { createPrismaClient } from "./client-factory";
 import type { DateTimeProvider } from "../scheduler/date-provider";
-import { PrismaClient } from "../../prisma/generated/client";
+import { SystemDateTimeProvider } from "../scheduler/date-provider";
 
 export class DbClient {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof createPrismaClient>;
+  private dateProvider: DateTimeProvider;
 
-  private constructor(prisma: PrismaClient) {
+  private constructor(prisma: ReturnType<typeof createPrismaClient>, dateProvider: DateTimeProvider) {
     this.prisma = prisma;
+    this.dateProvider = dateProvider;
   }
 
   static createDefault(): DbClient {
@@ -15,16 +17,16 @@ export class DbClient {
       throw new Error("DATABASE_URL environment variable is not set");
     }
     const prisma = createPrismaClient(connectionString);
-    return new DbClient(prisma);
+    return new DbClient(prisma, new SystemDateTimeProvider());
   }
 
-  static create(connectionString: string): DbClient {
+  static create(connectionString: string, dateProvider: DateTimeProvider): DbClient {
     const prisma = createPrismaClient(connectionString);
-    return new DbClient(prisma);
+    return new DbClient(prisma, dateProvider);
   }
 
-  async getNextPostToSend(dateProvider: DateTimeProvider) {
-    const now = dateProvider.now();
+  async getNextPostToSend() {
+    const now = this.dateProvider.now();
 
     const mostRecentPost = await this.prisma.post.findFirst({
       where: {
@@ -43,6 +45,10 @@ export class DbClient {
     }
 
     return mostRecentPost;
+  }
+
+  async createPosts(data: { body: string; time: Date; sentTime: Date | null }[]) {
+    return this.prisma.post.createMany({ data });
   }
 
   async markPostAsSent(postId: number) {

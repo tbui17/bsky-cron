@@ -23,6 +23,7 @@ Thumbs.db
 dist/
 build/
 
-/src/generated/prisma
+# Prisma generated client
+prisma/generated/
 
 /src/generated/prisma

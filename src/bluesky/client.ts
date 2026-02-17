@@ -1,38 +1,63 @@
 import { AtpAgent } from "@atproto/api";
-import * as dotenv from "dotenv";
 
-dotenv.config();
-
-const handle = process.env.BLUESKY_HANDLE;
-const password = process.env.BLUESKY_PASSWORD;
-
-if (!handle || !password) {
-  throw new Error("BLUESKY_HANDLE and BLUESKY_PASSWORD must be set");
+export interface Credentials {
+  handle: string;
+  password: string;
 }
 
-const agent = new AtpAgent({
-  service: "https://bsky.social",
-});
+export class BlueskyClient {
+  private agent: AtpAgent;
+  private isLoggedIn = false;
 
-let isLoggedIn = false;
+  private constructor(credentials: Credentials) {
+    this.agent = new AtpAgent({
+      service: "https://bsky.social",
+    });
+  }
 
-export async function loginToBluesky() {
-  if (isLoggedIn) return;
-  
-  await agent.login({
-    identifier: handle,
-    password: password,
-  });
-  
-  isLoggedIn = true;
-}
+  static createDefault(): BlueskyClient {
+    const handle = process.env.BLUESKY_HANDLE;
+    const password = process.env.BLUESKY_PASSWORD;
 
-export async function postToBluesky(text: string) {
-  await loginToBluesky();
-  
-  const response = await agent.post({
-    text,
-  });
+    if (!handle || !password) {
+      throw new Error("BLUESKY_HANDLE and BLUESKY_PASSWORD must be set");
+    }
 
-  return response;
+    return new BlueskyClient({ handle, password });
+  }
+
+  async login(): Promise<void> {
+    if (this.isLoggedIn) return;
+
+    const handle = process.env.BLUESKY_HANDLE;
+    const password = process.env.BLUESKY_PASSWORD;
+
+    if (!handle || !password) {
+      throw new Error("BLUESKY_HANDLE and BLUESKY_PASSWORD must be set");
+    }
+
+    await this.agent.login({
+      identifier: handle,
+      password: password,
+    });
+
+    this.isLoggedIn = true;
+  }
+
+  async post(text: string): Promise<{ uri: string; cid: string }> {
+    await this.login();
+
+    const response = await this.agent.post({
+      text,
+    });
+
+    return {
+      uri: response.uri,
+      cid: response.cid,
+    };
+  }
+
+  get IsLoggedIn(): boolean {
+    return this.isLoggedIn;
+  }
 }

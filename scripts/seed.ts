@@ -1,24 +1,23 @@
-import { db } from "../db/client";
-import { logger } from "../logger";
+import { DbClient } from "../src/db/db-client";
+import { SystemDateTimeProvider } from "../src/scheduler/date-provider";
+import { logger } from "../src/logger";
 import * as fs from "fs";
 import * as path from "path";
+
+const db = DbClient.createDefault(new SystemDateTimeProvider());
 
 async function seed() {
   logger.info("Starting database seed...");
 
-  // Read CSV file
   const csvPath = path.join(process.cwd(), "data.csv");
   const csvContent = fs.readFileSync(csvPath, "utf-8");
   const lines = csvContent.split("\n").filter(line => line.trim());
   
-  // Skip header
   const dataLines = lines.slice(1);
   
   logger.info(`Found ${dataLines.length} rows to import`);
 
-  // Parse and insert data
   for (const line of dataLines) {
-    // Parse CSV: "body","time"
     const match = line.match(/^"(.*)","(.*)"$/);
     if (!match) continue;
     
@@ -26,7 +25,7 @@ async function seed() {
     const time = new Date(timeStr);
 
     await db.createPost({
-      body: body.replace(/""/g, '"'), // Unescape quotes
+      body: body.replace(/""/g, '"'),
       time,
       sentTime: null,
     });

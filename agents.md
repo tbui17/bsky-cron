@@ -7,10 +7,10 @@ Bluesky cron job that posts scheduled messages from a PostgreSQL database to Blu
 - **Runtime**: Bun
 - **Language**: TypeScript
 - **API**: @atproto/api (Bluesky SDK)
-- **Database**: PostgreSQL via Supabase (stores social media posts with scheduled times)
+- **Database**: PostgreSQL (stores social media posts with scheduled times)
 - **ORM**: Prisma
 - **Logging**: Pino with pino-pretty
-- **CLI**: Supabase CLI for local development
+- **CLI**: Docker for local development
 - **Testing**: Bun's built-in test runner
 - **CI/CD**: GitHub Actions
 
@@ -95,7 +95,7 @@ model Post {
 
 ## Local Development
 
-1. Start Supabase: `bun run supabase:start`
+1. Start local PostgreSQL: `docker-compose -f docker-compose.test.yml up -d`
 2. Set `DATABASE_URL` to local URL: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`
 3. Push schema: `bun run prisma:push`
 4. Seed data: `bun run db:seed`
@@ -110,4 +110,3 @@ Bluesky allows 1,666 posts/hour, 11,666/day. This cron posts 48/day (every 30 mi
 - Use `gh secret set` to configure repo secrets
 - The scheduler only sends the most recent past-due post (not all overdue posts)
 - Bluesky integration tests post to actual account
-- Hosted database push requires network access to Supabase

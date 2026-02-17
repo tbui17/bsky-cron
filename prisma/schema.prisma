@@ -14,10 +14,15 @@ datasource db {
 }
 
 model Post {
+  /// Primary key, auto-incremented
   id        Int       @id @default(autoincrement())
+  /// Auto-set timestamp when record is created
   createdAt DateTime  @default(now()) @map("created_at")
+  /// Post content text (supports long-form posts via @db.Text)
   body      String    @default("") @db.Text
+  /// Scheduled time to post (must be unique)
   time      DateTime  @unique
+  /// Timestamp when post was sent to Bluesky (null = not yet sent)
   sentTime  DateTime? @map("sent_time")
 
   @@map("post")
