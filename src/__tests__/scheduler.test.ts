@@ -66,8 +66,8 @@ describe("Scheduler Integration Tests", () => {
     expect(result).toBeNull();
     expect(mockBluesky.postedTexts).toHaveLength(0);
     // Status message should contain time values (e.g., "2h" or "1h 30m")
-    const scheduledPost = await scheduler.getNextPost();
-    expect(scheduler.getStatusMessage(scheduledPost)).toMatch(/.*\d+h.*/);
+    const scheduledPost = await db.getNextPostToSend();
+    expect(scheduledPost.getStatusMessage()).toMatch(/.*\d+h.*/);
   });
 
   it("should return null and log status when all past posts are already sent", async () => {
@@ -128,10 +128,26 @@ describe("Scheduler Integration Tests", () => {
     mockDateProvider.setTime(now);
 
     await db.createPosts([
-      { body: "1 AM sent", time: new Date("2024-01-15T01:00:00Z"), sentTime: new Date("2024-01-15T01:05:00Z") },
-      { body: "2 AM unsent", time: new Date("2024-01-15T02:00:00Z"), sentTime: null },
-      { body: "3 AM sent", time: new Date("2024-01-15T03:00:00Z"), sentTime: new Date("2024-01-15T03:05:00Z") },
-      { body: "5 AM future", time: new Date("2024-01-15T05:00:00Z"), sentTime: null },
+      {
+        body: "1 AM sent",
+        time: new Date("2024-01-15T01:00:00Z"),
+        sentTime: new Date("2024-01-15T01:05:00Z"),
+      },
+      {
+        body: "2 AM unsent",
+        time: new Date("2024-01-15T02:00:00Z"),
+        sentTime: null,
+      },
+      {
+        body: "3 AM sent",
+        time: new Date("2024-01-15T03:00:00Z"),
+        sentTime: new Date("2024-01-15T03:05:00Z"),
+      },
+      {
+        body: "5 AM future",
+        time: new Date("2024-01-15T05:00:00Z"),
+        sentTime: null,
+      },
     ]);
 
     const result = await scheduler.run();
@@ -147,10 +163,26 @@ describe("Scheduler Integration Tests", () => {
     mockDateProvider.setTime(now);
 
     await db.createPosts([
-      { body: "1 AM sent", time: new Date("2024-01-15T01:00:00Z"), sentTime: new Date("2024-01-15T01:05:00Z") },
-      { body: "2 AM unsent", time: new Date("2024-01-15T02:00:00Z"), sentTime: null },
-      { body: "3 AM unsent", time: new Date("2024-01-15T03:00:00Z"), sentTime: null },
-      { body: "5 AM future", time: new Date("2024-01-15T05:00:00Z"), sentTime: null },
+      {
+        body: "1 AM sent",
+        time: new Date("2024-01-15T01:00:00Z"),
+        sentTime: new Date("2024-01-15T01:05:00Z"),
+      },
+      {
+        body: "2 AM unsent",
+        time: new Date("2024-01-15T02:00:00Z"),
+        sentTime: null,
+      },
+      {
+        body: "3 AM unsent",
+        time: new Date("2024-01-15T03:00:00Z"),
+        sentTime: null,
+      },
+      {
+        body: "5 AM future",
+        time: new Date("2024-01-15T05:00:00Z"),
+        sentTime: null,
+      },
     ]);
 
     const result = await scheduler.run();
