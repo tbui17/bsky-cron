@@ -123,8 +123,16 @@ describe("Integration: 4AM scenario", () => {
     expect(nextPost).toBeNull();
   });
 
-  it("should send 4 AM post when it's the most recent past post", async () => {
-    // Create posts directly
+  it("should send 3 AM post when it's the most recent past post", async () => {
+    // Setup: Current time is 4:00 AM
+    const currentTime = new Date("2024-01-15T04:00:00Z");
+    const mockDateProvider = new MockDateTimeProvider(currentTime);
+
+    // Create posts:
+    // - 1:00 AM, not sent
+    // - 2:00 AM, not sent
+    // - 3:00 AM, sent
+    // - 5:00 AM, not sent (future)
     await db.createPost({
       body: "1 AM post",
       time: new Date("2024-01-15T01:00:00Z"),
@@ -138,23 +146,18 @@ describe("Integration: 4AM scenario", () => {
     await db.createPost({
       body: "3 AM post",
       time: new Date("2024-01-15T03:00:00Z"),
-      sentTime: new Date("2024-01-15T03:05:00Z"),
-    });
-    await db.createPost({
-      body: "4 AM post",
-      time: new Date("2024-01-15T04:00:00Z"),
       sentTime: null,
     });
-
-    // Setup: Current time is 4:00 AM
-    const currentTime = new Date("2024-01-15T04:00:00Z");
-    const mockDateProvider = new MockDateTimeProvider(currentTime);
+    await db.createPost({
+      body: "5 AM post",
+      time: new Date("2024-01-15T05:00:00Z"),
+      sentTime: null,
+    });
 
     // Execute: Try to get next post
     const nextPost = await db.getNextPostToSend(mockDateProvider);
 
-    // Verify: Should return 4 AM post
     expect(nextPost).not.toBeNull();
-    expect(nextPost?.body).toBe("4 AM post");
+    expect(nextPost!.body).toBe("3 AM post");
   });
 });
