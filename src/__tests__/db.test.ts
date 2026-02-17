@@ -37,10 +37,11 @@ describe("Database Operations", () => {
     ]);
 
     mockDateProvider.setTime(now);
-    const nextPost = await db.getNextPostToSend();
+    const scheduledPost = await db.getNextPostToSend();
 
-    expect(nextPost).not.toBeNull();
-    expect(nextPost?.body).toBe("Most recent post"); // Most recent past post
+    expect(scheduledPost.hasPost()).toBe(true);
+    expect(scheduledPost.isReadyToSend()).toBe(true);
+    expect(scheduledPost.getBody()).toBe("Most recent post");
   });
 
   it("should not return posts that have already been sent", async () => {
@@ -51,9 +52,13 @@ describe("Database Operations", () => {
     await db.createPost({ body: "Sent post", time: past, sentTime: now });
 
     mockDateProvider.setTime(now);
-    const nextPost = await db.getNextPostToSend();
+    const scheduledPost = await db.getNextPostToSend();
 
-    expect(nextPost?.body).not.toBe("Sent post");
+    // Since the past post is already sent, we should get an upcoming post (or no post)
+    // Either way, the sent post should not be returned as ready to send
+    if (scheduledPost.hasPost()) {
+      expect(scheduledPost.isReadyToSend()).toBe(false);
+    }
   });
 
   it("should mark a post as sent", async () => {
@@ -103,10 +108,12 @@ describe("Integration: 4AM scenario", () => {
 
     // Execute: Try to get next post
     mockDateProvider.setTime(currentTime);
-    const nextPost = await db.getNextPostToSend();
+    const scheduledPost = await db.getNextPostToSend();
 
-    // Verify: Should return null because 5 AM post is in the future
-    expect(nextPost).toBeNull();
+    // Verify: All past posts are sent, so we should get the upcoming 5 AM post
+    expect(scheduledPost.hasPost()).toBe(true);
+    expect(scheduledPost.isReadyToSend()).toBe(false); // Future post, not ready
+    expect(scheduledPost.isAlreadySent()).toBe(false);
   });
 
   it("should send 3 AM post when it's the most recent past post", async () => {
@@ -127,9 +134,10 @@ describe("Integration: 4AM scenario", () => {
 
     // Execute: Try to get next post
     mockDateProvider.setTime(currentTime);
-    const nextPost = await db.getNextPostToSend();
+    const scheduledPost = await db.getNextPostToSend();
 
-    expect(nextPost).not.toBeNull();
-    expect(nextPost!.body).toBe("3 AM post");
+    expect(scheduledPost.hasPost()).toBe(true);
+    expect(scheduledPost.isReadyToSend()).toBe(true);
+    expect(scheduledPost.getBody()).toBe("3 AM post");
   });
 });

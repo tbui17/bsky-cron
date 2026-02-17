@@ -110,3 +110,19 @@ Bluesky allows 1,666 posts/hour, 11,666/day. This cron posts 48/day (every 30 mi
 - Use `gh secret set` to configure repo secrets
 - The scheduler only sends the most recent past-due post (not all overdue posts)
 - Bluesky integration tests post to actual account
+
+## Testing Requirements
+
+All new features require comprehensive test coverage:
+
+- **Unit tests**: Test domain objects and utilities in isolation
+- **Integration tests**: Test with Docker database using real data, not mocks
+- **Test location**: Place tests in `src/__tests__/` with descriptive names
+- **Database tests**: Use `MockDateTimeProvider` for deterministic time-based tests
+- **Regex assertions**: Use regex patterns for human-readable messages (e.g., `/Next post in \d+h? \d*m/`)
+
+### Test Patterns
+
+**Domain objects**: Test all public methods with various states
+**DbClient**: Test query logic with real database operations
+**Runner**: Mock external dependencies (Bluesky), test decision logic with Docker DB

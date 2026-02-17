@@ -1,6 +1,9 @@
 import { createPrismaClient } from "./client-factory";
 import type { DateTimeProvider } from "../scheduler/date-provider";
 import { SystemDateTimeProvider } from "../scheduler/date-provider";
+import { ScheduledPost } from "../scheduler/scheduled-post";
+import type { CreatePostInput } from "../types";
+import type { Post } from "../../prisma/generated/client";
 
 export class DbClient {
   private prisma: ReturnType<typeof createPrismaClient>;
@@ -31,7 +34,7 @@ export class DbClient {
     return new DbClient(prisma, dateProvider);
   }
 
-  async getNextPostToSend() {
+  async getNextPostToSend(): Promise<ScheduledPost> {
     const now = this.dateProvider.now();
 
     const mostRecentPost = await this.prisma.post.findFirst({
@@ -42,20 +45,23 @@ export class DbClient {
       take: 1,
     });
 
-    if (!mostRecentPost) {
-      return null;
+    if (mostRecentPost && mostRecentPost.sentTime === null) {
+      return new ScheduledPost(mostRecentPost, now);
     }
 
-    if (mostRecentPost.sentTime !== null) {
-      return null;
-    }
+    const nextUpcomingPost = await this.prisma.post.findFirst({
+      where: {
+        time: { gt: now },
+        sentTime: null,
+      },
+      orderBy: { time: "asc" },
+      take: 1,
+    });
 
-    return mostRecentPost;
+    return new ScheduledPost(nextUpcomingPost, now);
   }
 
-  async createPosts(
-    data: { body: string; time: Date; sentTime: Date | null }[],
-  ) {
+  async createPosts(data: CreatePostInput[]) {
     return this.prisma.post.createMany({ data });
   }
 
@@ -77,11 +83,11 @@ export class DbClient {
   }
 
   // Test helper methods
-  async createPost(data: { body: string; time: Date; sentTime: Date | null }) {
+  async createPost(data: CreatePostInput): Promise<Post> {
     return this.prisma.post.create({ data });
   }
 
-  async findPostById(id: number) {
+  async findPostById(id: number): Promise<Post | null> {
     return this.prisma.post.findUnique({ where: { id } });
   }
 
