@@ -53,7 +53,7 @@ describe("Scheduler Integration Tests", () => {
 
     expect(scheduledPost.hasPost()).toBe(true);
     expect(scheduledPost.isReadyToSend()).toBe(false);
-    expect(scheduledPost.getStatusMessage()).toMatch(/.*\d+h.*/);
+    expect(scheduledPost.getStatusMessage()).toMatch(/Next post scheduled in \d+[hm]/);
   });
 
   it("returns empty when all past posts are already sent and no future posts", async () => {
