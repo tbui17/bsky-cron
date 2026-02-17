@@ -1,7 +1,7 @@
 # Agents.md - Project Documentation for Opencode
 
 ## Project Overview
-Bluesky cron job that posts scheduled messages from a PostgreSQL database to Bluesky every 5 minutes via GitHub Actions.
+Bluesky cron job that posts scheduled messages from a PostgreSQL database to Bluesky every 30 minutes via GitHub Actions.
 
 ## Tech Stack
 - **Runtime**: Bun
@@ -18,33 +18,17 @@ Bluesky cron job that posts scheduled messages from a PostgreSQL database to Blu
 Required in `.env` or GitHub Secrets:
 - `BLUESKY_HANDLE` - Bluesky handle (e.g., tbui18.bsky.social)
 - `BLUESKY_PASSWORD` - Bluesky app password
-- `DB_CONNECTION` - PostgreSQL connection string
+- `DATABASE_URL` - PostgreSQL connection string
 
 ## Commands
 
 ### Development
 ```bash
 # Run scheduler locally
-bun run post
 bun run dev
 
 # Testing
 bun run test
-
-# Supabase (local)
-bun run supabase:start
-bun run supabase:stop
-```
-
-### Database Operations
-```bash
-# Prisma
-bun run prisma:generate    # Generate Prisma client
-bun run prisma:push        # Push schema to database
-
-# Data
-bun run db:seed            # Import data from data.csv
-bun run db:truncate        # Clear all posts
 ```
 
 ### GitHub Actions
@@ -57,32 +41,30 @@ gh workflow run cron.yml
 ```
 bsky-cron/
 ├── .github/workflows/
-│   └── cron.yml          # GHA cron workflow (every 5 min)
+│   └── cron.yml          # GHA cron workflow (every 30 min)
 ├── prisma/
 │   ├── schema.prisma     # Database schema
-│   └── migrations/       # Database migrations
+│   ├── generated/        # Generated Prisma client
+│   └── config.ts        # Prisma configuration
 ├── src/
 │   ├── index.ts          # Entry point
 │   ├── db/
 │   │   ├── client.ts     # Prisma client singleton
-│   │   ├── posts.ts      # Post repository functions
-│   │   └── seed.ts       # Data seeding script
+│   │   ├── db-client.ts # DbClient class
+│   │   └── client-factory.ts # Prisma client factory
 │   ├── bluesky/
-│   │   └── client.ts     # Bluesky API client
+│   │   └── client.ts    # Bluesky API client
 │   ├── scheduler/
-│   │   └── runner.ts     # Core scheduling logic
-│   ├── logger.ts         # Pino logger configuration
+│   │   ├── runner.ts    # Core scheduling logic
+│   │   └── date-provider.ts # DateTimeProvider
+│   ├── logger.ts        # Pino logger configuration
 │   └── __tests__/
-│       ├── db.test.ts    # Database integration tests
-│       └── bluesky.test.ts # Bluesky API tests
-├── supabase/             # Supabase CLI configuration
-├── data.csv              # Seed data (body,time columns)
-├── .env.example          # Environment template
-├── .gitignore            # Git ignore rules
-├── package.json          # Dependencies and scripts
-├── tsconfig.json         # TypeScript config
-├── prisma.config.ts      # Prisma configuration
-└── README.md             # User documentation
+│       ├── db.test.ts   # Database integration tests
+│       ├── bluesky.test.ts # Bluesky API tests
+│       └── smoke.test.ts # Production DB smoke test
+├── .env.example         # Environment template
+├── package.json         # Dependencies and scripts
+└── prisma.config.ts     # Prisma configuration
 ```
 
 ## Key Files
@@ -102,7 +84,7 @@ model Post {
   time      DateTime  @unique
   sentTime  DateTime? @map("sent_time")
 
-  @@map("posts")
+  @@map("post")
 }
 ```
 
@@ -114,13 +96,13 @@ model Post {
 ## Local Development
 
 1. Start Supabase: `bun run supabase:start`
-2. Set `DB_CONNECTION` to local URL: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`
+2. Set `DATABASE_URL` to local URL: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`
 3. Push schema: `bun run prisma:push`
 4. Seed data: `bun run db:seed`
 5. Run tests: `bun run test`
 
 ## Rate Limits
-Bluesky allows 1,666 posts/hour, 11,666/day. This cron posts 288/day (every 5 min).
+Bluesky allows 1,666 posts/hour, 11,666/day. This cron posts 48/day (every 30 min).
 
 ## Important Notes
 - GitHub Actions cron is "best-effort" - jobs may be delayed by hours

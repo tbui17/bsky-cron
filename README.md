@@ -37,7 +37,7 @@ Copy `.env.example` to `.env` and configure:
 ```bash
 BLUESKY_HANDLE=your-handle.bsky.social
 BLUESKY_PASSWORD=your-app-password
-DB_CONNECTION=postgresql://postgres:password@db.supabase.co:5432/postgres
+DATABASE_URL=postgresql://postgres:password@db.supabase.co:5432/postgres
 ```
 
 ### 3. Database Setup
@@ -51,7 +51,7 @@ bun run supabase:start
 # Generate Prisma client
 bun run prisma:generate
 
-# Push schema to local database (uses DB_CONNECTION from .env)
+# Push schema to local database (uses DATABASE_URL from .env)
 bun run prisma:push
 
 # Seed with data from data.csv
@@ -88,7 +88,7 @@ bun run dev
 
 ### GitHub Actions
 
-The cron workflow runs every 5 minutes automatically. You can also trigger manually:
+The cron workflow runs every 30 minutes automatically. You can also trigger manually:
 
 ```bash
 gh workflow run cron.yml
@@ -103,6 +103,8 @@ model Post {
   body      String    @default("") @db.Text
   time      DateTime  @unique
   sentTime  DateTime? @map("sent_time")
+
+  @@map("post")
 }
 ```
 
@@ -127,20 +129,9 @@ The scheduler:
 ## Scripts
 
 ```bash
-# Database
-bun run prisma:generate    # Generate Prisma client
-bun run prisma:push        # Push schema to database
-bun run db:seed            # Import data from data.csv
-bun run db:truncate        # Clear all posts
-
 # Development
-bun run post               # Run scheduler
-bun run dev                # Run scheduler (alias)
+bun run dev                # Run scheduler
 bun run test               # Run integration tests
-
-# Supabase
-bun run supabase:start     # Start local Supabase
-bun run supabase:stop      # Stop local Supabase
 ```
 
 ## Testing
@@ -164,7 +155,7 @@ bun run test
 
 Bluesky API limits:
 - **Create Posts:** 1,666/hour, 11,666/day
-- **This cron:** 288 posts/day (every 5 minutes)
+- **This cron:** 48 posts/day (every 30 minutes)
 
 We're well within safe limits. The script exits with code 1 on failure, triggering GHA notifications.
 
@@ -182,23 +173,23 @@ bsky-cron/
 │   └── cron.yml          # GHA workflow
 ├── prisma/
 │   ├── schema.prisma     # Database schema
-│   └── migrations/       # Database migrations
+│   └── generated/        # Generated Prisma client
 ├── src/
 │   ├── index.ts          # Entry point
 │   ├── db/
-│   │   ├── client.ts     # Prisma client
-│   │   ├── posts.ts      # Post repository
-│   │   └── seed.ts       # Seed script
+│   │   ├── client.ts     # Prisma client singleton
+│   │   ├── db-client.ts  # DbClient class
+│   │   └── client-factory.ts # Prisma client factory
 │   ├── bluesky/
 │   │   └── client.ts     # Bluesky API client
 │   ├── scheduler/
-│   │   └── runner.ts     # Core scheduling logic
+│   │   ├── runner.ts     # Core scheduling logic
+│   │   └── date-provider.ts # DateTimeProvider interface
 │   ├── logger.ts         # Pino logger setup
 │   └── __tests__/
 │       ├── db.test.ts    # Database tests
-│       └── bluesky.test.ts # Bluesky API tests
-├── data.csv              # Seed data
-├── supabase/             # Supabase config
+│       ├── bluesky.test.ts # Bluesky API tests
+│       └── smoke.test.ts # Production DB smoke test
 ├── .env.example          # Env template
 └── package.json          # Scripts & dependencies
 ```
