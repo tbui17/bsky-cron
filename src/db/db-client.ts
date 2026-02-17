@@ -1,23 +1,23 @@
 import { createPrismaClient } from "./client-factory";
 import type { DateTimeProvider } from "../scheduler/date-provider";
-import { PrismaClient } from "../../prisma/generated/client";
+import { SystemDateTimeProvider } from "../scheduler/date-provider";
 
 export class DbClient {
-  private prisma: PrismaClient;
+  private prisma: ReturnType<typeof createPrismaClient>;
   private dateProvider: DateTimeProvider;
 
-  private constructor(prisma: PrismaClient, dateProvider: DateTimeProvider) {
+  private constructor(prisma: ReturnType<typeof createPrismaClient>, dateProvider: DateTimeProvider) {
     this.prisma = prisma;
     this.dateProvider = dateProvider;
   }
 
-  static createDefault(dateProvider: DateTimeProvider): DbClient {
+  static createDefault(): DbClient {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
       throw new Error("DATABASE_URL environment variable is not set");
     }
     const prisma = createPrismaClient(connectionString);
-    return new DbClient(prisma, dateProvider);
+    return new DbClient(prisma, new SystemDateTimeProvider());
   }
 
   static create(connectionString: string, dateProvider: DateTimeProvider): DbClient {
