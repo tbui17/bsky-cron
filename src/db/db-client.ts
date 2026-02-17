@@ -6,7 +6,10 @@ export class DbClient {
   private prisma: ReturnType<typeof createPrismaClient>;
   private dateProvider: DateTimeProvider;
 
-  private constructor(prisma: ReturnType<typeof createPrismaClient>, dateProvider: DateTimeProvider) {
+  private constructor(
+    prisma: ReturnType<typeof createPrismaClient>,
+    dateProvider: DateTimeProvider,
+  ) {
     this.prisma = prisma;
     this.dateProvider = dateProvider;
   }
@@ -20,7 +23,10 @@ export class DbClient {
     return new DbClient(prisma, new SystemDateTimeProvider());
   }
 
-  static create(connectionString: string, dateProvider: DateTimeProvider): DbClient {
+  static create(
+    connectionString: string,
+    dateProvider: DateTimeProvider,
+  ): DbClient {
     const prisma = createPrismaClient(connectionString);
     return new DbClient(prisma, dateProvider);
   }
@@ -36,7 +42,7 @@ export class DbClient {
       take: 1,
     });
 
-    if (!mostRecentPost || mostRecentPost.time > now) {
+    if (!mostRecentPost) {
       return null;
     }
 
@@ -47,7 +53,9 @@ export class DbClient {
     return mostRecentPost;
   }
 
-  async createPosts(data: { body: string; time: Date; sentTime: Date | null }[]) {
+  async createPosts(
+    data: { body: string; time: Date; sentTime: Date | null }[],
+  ) {
     return this.prisma.post.createMany({ data });
   }
 
