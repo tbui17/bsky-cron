@@ -1,5 +1,5 @@
 import type { Post } from "../../prisma/generated/client";
-import { PostCreateArgs } from "../../prisma/generated/models";
+import type { PostCreateInput } from "../../prisma/generated/models";
 import type { DateTimeProvider } from "../scheduler/date-provider";
 import { SystemDateTimeProvider } from "../scheduler/date-provider";
 import { ScheduledPost } from "../scheduler/scheduled-post";
@@ -61,7 +61,7 @@ export class DbClient {
     return new ScheduledPost(nextUpcomingPost, now);
   }
 
-  async createPosts(data: PostCreateArgs["data"][]) {
+  async createPosts(data: PostCreateInput[]) {
     return this.prisma.post.createMany({ data });
   }
 
@@ -92,7 +92,7 @@ export class DbClient {
   }
 
   // Test helper methods
-  async createPost(data: PostCreateArgs["data"]): Promise<Post> {
+  async createPost(data: PostCreateInput): Promise<Post> {
     return this.prisma.post.create({ data });
   }
 

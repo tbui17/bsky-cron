@@ -98,7 +98,7 @@ model Post {
 ## Local Development
 
 1. Start local PostgreSQL: `docker-compose -f docker-compose.test.yml up -d`
-2. Set `DATABASE_URL` to local URL: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`
+2. Set `DATABASE_URL` to local URL: `postgresql://postgres:postgres@127.0.0.1:5432/postgres`
 3. Push schema: `bun run prisma:push`
 4. Seed data: `bun run db:seed`
 5. Run tests: `bun run test`

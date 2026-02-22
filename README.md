@@ -140,7 +140,7 @@ Run integration tests against local PostgreSQL:
 
 ```bash
 # Set local database URL in .env
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/postgres
 
 # Run tests
 bun run test

@@ -28,7 +28,7 @@ export class Scheduler {
       }
 
       const post = scheduledPost.getPost();
-      logger.info(post, "Found post to send");
+      logger.info({ id: post.id, body: post.body, time: post.time }, "Found post to send");
 
       const response = await this.blueskyClient.post(post.body);
       await this.dbClient.markPostAsSent(post.id);
