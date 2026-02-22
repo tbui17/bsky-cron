@@ -55,7 +55,8 @@ bsky-cron/
 │   ├── bluesky/
 │   │   └── client.ts    # Bluesky API client
 │   ├── scheduler/
-│   │   ├── runner.ts    # Core scheduling logic
+│   │   ├── scheduler.ts    # Scheduler class with getNextPost() and run()
+│   │   ├── scheduled-post.ts # Domain object for post state
 │   │   └── date-provider.ts # DateTimeProvider
 │   ├── logger.ts        # Pino logger configuration
 │   └── __tests__/
@@ -68,9 +69,10 @@ bsky-cron/
 ```
 
 ## Key Files
-- `src/index.ts` - Entry point, calls scheduler
-- `src/scheduler/runner.ts` - Core logic: queries DB, posts to Bluesky, updates sent_time
-- `src/db/posts.ts` - Database operations
+- `src/index.ts` - Entry point, creates Scheduler with DbClient and BlueskyClient
+- `src/scheduler/scheduler.ts` - Scheduler class with getNextPost() and run() methods
+- `src/scheduler/scheduled-post.ts` - Domain object encapsulating post state
+- `src/db/db-client.ts` - Database operations including getNextPost()
 - `prisma/schema.prisma` - Post model: id, created_at, body, time, sent_time
 - `.github/workflows/cron.yml` - Scheduled workflow
 
@@ -96,7 +98,7 @@ model Post {
 ## Local Development
 
 1. Start local PostgreSQL: `docker-compose -f docker-compose.test.yml up -d`
-2. Set `DATABASE_URL` to local URL: `postgresql://postgres:postgres@127.0.0.1:54322/postgres`
+2. Set `DATABASE_URL` to local URL: `postgresql://postgres:postgres@127.0.0.1:5432/postgres`
 3. Push schema: `bun run prisma:push`
 4. Seed data: `bun run db:seed`
 5. Run tests: `bun run test`
@@ -123,6 +125,6 @@ All new features require comprehensive test coverage:
 
 ### Test Patterns
 
-**Domain objects**: Test all public methods with various states
+**ScheduledPost**: Test all public methods with various states
 **DbClient**: Test query logic with real database operations
-**Runner**: Mock external dependencies (Bluesky), test decision logic with Docker DB
+**Scheduler**: Test getNextPost() with real Docker DB, mock Bluesky if testing run()

@@ -24,4 +24,5 @@ dist/
 build/
 
 /src/generated/prisma
+prisma/generated/
 tmp-build

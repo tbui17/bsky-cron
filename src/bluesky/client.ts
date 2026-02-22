@@ -8,8 +8,10 @@ export interface Credentials {
 export class BlueskyClient {
   private agent: AtpAgent;
   private isLoggedIn = false;
+  private credentials: Credentials;
 
   private constructor(credentials: Credentials) {
+    this.credentials = credentials;
     this.agent = new AtpAgent({
       service: "https://bsky.social",
     });
@@ -26,19 +28,16 @@ export class BlueskyClient {
     return new BlueskyClient({ handle, password });
   }
 
+  static create(credentials: Credentials): BlueskyClient {
+    return new BlueskyClient(credentials);
+  }
+
   async login(): Promise<void> {
     if (this.isLoggedIn) return;
 
-    const handle = process.env.BLUESKY_HANDLE;
-    const password = process.env.BLUESKY_PASSWORD;
-
-    if (!handle || !password) {
-      throw new Error("BLUESKY_HANDLE and BLUESKY_PASSWORD must be set");
-    }
-
     await this.agent.login({
-      identifier: handle,
-      password: password,
+      identifier: this.credentials.handle,
+      password: this.credentials.password,
     });
 
     this.isLoggedIn = true;
