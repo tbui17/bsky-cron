@@ -17,13 +17,20 @@ export class DbClient {
     this.dateProvider = dateProvider;
   }
 
+  private static defaultInstance: DbClient | null = null;
+
   static createDefault(): DbClient {
+    if (DbClient.defaultInstance) {
+      return DbClient.defaultInstance;
+    }
+
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
       throw new Error("DATABASE_URL environment variable is not set");
     }
     const prisma = createPrismaClient(connectionString);
-    return new DbClient(prisma, new SystemDateTimeProvider());
+    DbClient.defaultInstance = new DbClient(prisma, new SystemDateTimeProvider());
+    return DbClient.defaultInstance;
   }
 
   static create(

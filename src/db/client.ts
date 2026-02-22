@@ -1,7 +1,4 @@
 import { DbClient } from "./db-client";
-import * as dotenv from "dotenv";
-
-dotenv.config();
 
 const globalForDb = globalThis as unknown as {
   db: DbClient | undefined;
